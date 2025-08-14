@@ -1,0 +1,9 @@
+{
+  "name": "@fintr/shared",
+  "version": "1.0.0",
+  "main": "database.js",
+  "description": "Shared database utilities for fintr microservices",
+  "dependencies": {
+    "pg": "^8.11.3"
+  }
+}
