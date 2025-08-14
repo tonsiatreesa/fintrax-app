@@ -18,7 +18,12 @@ export const useEditTransaction = (id?: string) => {
     RequestType
   >({
     mutationFn: async (json) => {
+      console.log("Edit mutation called with:", json);
+      console.log("Transaction ID:", id);
+      
       const token = await getToken();
+      console.log("Token obtained:", token ? "✓" : "✗");
+      
       const response = await client.api.transactions[":id"]["$patch"]({ 
         param: { id },
         json,
@@ -27,15 +32,32 @@ export const useEditTransaction = (id?: string) => {
           Authorization: `Bearer ${token}`,
         },
       });
-      return await response.json();
+      
+      console.log("Response status:", response.status);
+      const result = await response.json();
+      console.log("Response data:", result);
+      
+      // Check for API errors
+      if (!response.ok) {
+        throw new Error(result.error || `HTTP ${response.status}`);
+      }
+      
+      // Check for application-level errors
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Edit mutation success:", data);
       toast.success("Transaction updated");
       queryClient.invalidateQueries({ queryKey: ["transaction", { id }] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["summary"] });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Edit mutation error:", error);
       toast.error("Failed to edit transaction");
     },
   });

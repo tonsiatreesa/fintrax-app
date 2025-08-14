@@ -75,8 +75,10 @@ app.get("/demo", async (c) => {
         payee: transaction.payee,
         notes: transaction.notes,
         date: transaction.date,
-        account_name: transaction.account_name,
-        category_name: transaction.category_name
+        accountId: transaction.accountId,
+        categoryId: transaction.categoryId,
+        account: transaction.account,
+        category: transaction.category
       }))
     });
   } catch (error) {
@@ -230,21 +232,34 @@ app.patch(
     const { id } = c.req.valid("param");
     const values = c.req.valid("json");
 
+    console.log("PATCH request received:", {
+      id,
+      values,
+      userId: auth?.userId,
+      timestamp: new Date().toISOString()
+    });
+
     if (!id) {
+      console.log("ERROR: Missing id");
       return c.json({ error: "Missing id" }, 400);
     }
 
     if (!auth?.userId) {
+      console.log("ERROR: Unauthorized - no userId");
       return c.json({ error: "Unauthorized" }, 401);
     }
 
     try {
+      console.log("Calling updateTransaction with:", { id, values, userId: auth.userId });
       const data = await transactionService.updateTransaction(id, values, auth.userId);
+      console.log("UpdateTransaction result:", data);
 
       if (!data) {
+        console.log("ERROR: Transaction not found");
         return c.json({ error: "Not found" }, 404);
       }
 
+      console.log("SUCCESS: Returning updated transaction");
       return c.json({ data });
     } catch (error) {
       console.error("Transaction service error:", error);

@@ -150,9 +150,9 @@ class TransactionService {
     let query = `
       SELECT 
         t.id, t.amount, t.payee, t.notes, t.date,
-        t.account_id, t.category_id,
-        a.name as account_name,
-        c.name as category_name,
+        t.account_id as "accountId", t.category_id as "categoryId",
+        a.name as account,
+        c.name as category,
         t.created_at, t.updated_at
       FROM transactions t
       LEFT JOIN accounts a ON t.account_id = a.id
@@ -192,9 +192,9 @@ class TransactionService {
     const query = `
       SELECT 
         t.id, t.amount, t.payee, t.notes, t.date,
-        t.account_id, t.category_id,
-        a.name as account_name,
-        c.name as category_name,
+        t.account_id as "accountId", t.category_id as "categoryId",
+        a.name as account,
+        c.name as category,
         t.created_at, t.updated_at
       FROM transactions t
       LEFT JOIN accounts a ON t.account_id = a.id
@@ -206,26 +206,68 @@ class TransactionService {
   }
 
   async createTransaction(data, userId) {
-    const { amount, payee, notes, date, accountId, categoryId } = data;
-    const query = `
-      INSERT INTO transactions (amount, payee, notes, date, account_id, category_id, user_id) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7) 
-      RETURNING id, amount, payee, notes, date, account_id, category_id, created_at, updated_at
+    const { id, amount, payee, notes, date, accountId, categoryId } = data;
+    
+    // First insert the transaction
+    const insertQuery = `
+      INSERT INTO transactions (id, amount, payee, notes, date, account_id, category_id, user_id) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+      RETURNING id
     `;
-    const result = await this.db.query(query, [amount, payee, notes || null, date, accountId, categoryId || null, userId]);
-    return result.rows[0];
+    const insertResult = await this.db.query(insertQuery, [id, amount, payee, notes || null, date, accountId, categoryId || null, userId]);
+    
+    if (insertResult.rows.length === 0) {
+      throw new Error('Failed to create transaction');
+    }
+    
+    // Then fetch the created transaction with joined data
+    const selectQuery = `
+      SELECT 
+        t.id, t.amount, t.payee, t.notes, t.date,
+        t.account_id as "accountId", t.category_id as "categoryId",
+        a.name as account,
+        c.name as category,
+        t.created_at, t.updated_at
+      FROM transactions t
+      LEFT JOIN accounts a ON t.account_id = a.id
+      LEFT JOIN categories c ON t.category_id = c.id
+      WHERE t.id = $1 AND t.user_id = $2
+    `;
+    const selectResult = await this.db.query(selectQuery, [id, userId]);
+    return selectResult.rows[0];
   }
 
   async updateTransaction(id, data, userId) {
     const { amount, payee, notes, date, accountId, categoryId } = data;
-    const query = `
+    
+    // First update the transaction
+    const updateQuery = `
       UPDATE transactions 
       SET amount = $1, payee = $2, notes = $3, date = $4, account_id = $5, category_id = $6, updated_at = CURRENT_TIMESTAMP 
       WHERE id = $7 AND user_id = $8 
-      RETURNING id, amount, payee, notes, date, account_id, category_id, created_at, updated_at
+      RETURNING id
     `;
-    const result = await this.db.query(query, [amount, payee, notes || null, date, accountId, categoryId || null, id, userId]);
-    return result.rows[0];
+    const updateResult = await this.db.query(updateQuery, [amount, payee, notes || null, date, accountId, categoryId || null, id, userId]);
+    
+    if (updateResult.rows.length === 0) {
+      return null; // Transaction not found or not owned by user
+    }
+    
+    // Then fetch the updated transaction with joined data
+    const selectQuery = `
+      SELECT 
+        t.id, t.amount, t.payee, t.notes, t.date,
+        t.account_id as "accountId", t.category_id as "categoryId",
+        a.name as account,
+        c.name as category,
+        t.created_at, t.updated_at
+      FROM transactions t
+      LEFT JOIN accounts a ON t.account_id = a.id
+      LEFT JOIN categories c ON t.category_id = c.id
+      WHERE t.id = $1 AND t.user_id = $2
+    `;
+    const selectResult = await this.db.query(selectQuery, [id, userId]);
+    return selectResult.rows[0];
   }
 
   async deleteTransaction(id, userId) {
@@ -253,8 +295,10 @@ class TransactionService {
     const query = `
       SELECT 
         t.id, t.amount, t.payee, t.notes, t.date,
-        a.name as account_name,
-        c.name as category_name
+        t.account_id as "accountId", t.category_id as "categoryId",
+        a.name as account,
+        c.name as category,
+        t.created_at, t.updated_at
       FROM transactions t
       LEFT JOIN accounts a ON t.account_id = a.id
       LEFT JOIN categories c ON t.category_id = c.id
