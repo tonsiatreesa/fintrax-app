@@ -1,12 +1,14 @@
 import { toast } from "sonner";
 import { InferResponseType } from "hono";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@clerk/nextjs";
 
 import { client } from "@/lib/hono";
 
 type ResponseType = InferResponseType<typeof client.api.plaid["connected-bank"]["$delete"], 200>;
 
 export const useDeleteConnectedBank = () => {
+  const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
   const mutation = useMutation<
@@ -14,7 +16,12 @@ export const useDeleteConnectedBank = () => {
     Error
   >({
     mutationFn: async () => {
-      const response = await client.api.plaid["connected-bank"].$delete();
+      const token = await getToken();
+      const response = await client.api.plaid["connected-bank"].$delete({}, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (!response.ok) {
         throw Error("Failed to delete connected bank");

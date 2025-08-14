@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 
 import { client } from "@/lib/hono";
 import { convertAmountFromMiliunits } from "@/lib/utils";
 
 export const useGetTransactions = () => {
+  const { getToken } = useAuth();
   const params = useSearchParams();
   const from = params.get("from") || "";
   const to = params.get("to") || "";
@@ -13,11 +15,16 @@ export const useGetTransactions = () => {
   const query = useQuery({
     queryKey: ["transactions", { from, to, accountId }],
     queryFn: async () => {
+      const token = await getToken();
       const response = await client.api.transactions.$get({
         query: {
           from,
           to,
           accountId,
+        },
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
       });
 
