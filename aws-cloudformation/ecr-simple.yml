@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'FinTrax Single ECR Public Repository'
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: fintrax
+    Description: Project name for repository naming
+
+Resources:
+  # Single repository for all microservices
+  FinTraxRepo:
+    Type: AWS::ECR::PublicRepository
+    Properties:
+      RepositoryName: !Ref ProjectName
+      RepositoryPolicyText:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowPublicRead
+            Effect: Allow
+            Principal: '*'
+            Action:
+              - ecr-public:GetDownloadUrlForLayer
+              - ecr-public:BatchGetImage
+              - ecr-public:BatchCheckLayerAvailability
+      RepositoryCatalogData:
+        RepositoryDescription: 'FinTrax Microservices - All services in one repository'
+        UsageText: 'docker pull public.ecr.aws/fintrax:prod-frontend-latest'
+        AboutText: 'Complete FinTrax microservices stack - Frontend, API Gateway, Account Service, Transaction Service, Category Service, Analytics Service, Plaid Service, Subscription Service'
+
+Outputs:
+  RepositoryURI:
+    Description: 'ECR Public Repository URI'
+    Value: !Sub 'public.ecr.aws/${AWS::Partition}/${ProjectName}'
+    Export:
+      Name: !Sub '${AWS::StackName}-RepositoryURI'
+  
+  ImageExamples:
+    Description: 'Example image tags for different services and environments'
+    Value: !Sub |
+      Production Images:
+      - public.ecr.aws/${AWS::Partition}/${ProjectName}:prod-frontend-latest
+      - public.ecr.aws/${AWS::Partition}/${ProjectName}:prod-api-gateway-latest
+      - public.ecr.aws/${AWS::Partition}/${ProjectName}:prod-account-service-latest
+      - public.ecr.aws/${AWS::Partition}/${ProjectName}:prod-transaction-service-latest
+      
+      Staging Images:
+      - public.ecr.aws/${AWS::Partition}/${ProjectName}:staging-frontend-latest
+      - public.ecr.aws/${AWS::Partition}/${ProjectName}:staging-api-gateway-latest
+      
+      Development Images:
+      - public.ecr.aws/${AWS::Partition}/${ProjectName}:dev-frontend-latest
+      - public.ecr.aws/${AWS::Partition}/${ProjectName}:dev-api-gateway-latest

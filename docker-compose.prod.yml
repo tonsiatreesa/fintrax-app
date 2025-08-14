@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: public.ecr.aws/fintrax/prod-frontend:${IMAGE_TAG:-latest}
+
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    image: public.ecr.aws/fintrax/prod-api-gateway:${IMAGE_TAG:-latest}
+
+  transaction-service:
+    build:
+      context: ./services/transaction-service
+      dockerfile: Dockerfile
+    image: public.ecr.aws/fintrax/prod-transaction-service:${IMAGE_TAG:-latest}
+
+  account-service:
+    build:
+      context: ./services/account-service
+      dockerfile: Dockerfile
+    image: public.ecr.aws/fintrax/prod-account-service:${IMAGE_TAG:-latest}
+
+  category-service:
+    build:
+      context: ./services/category-service
+      dockerfile: Dockerfile
+    image: public.ecr.aws/fintrax/prod-category-service:${IMAGE_TAG:-latest}

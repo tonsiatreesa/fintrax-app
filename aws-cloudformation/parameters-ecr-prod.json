@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "fintrax"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "prod"
+  }
+]
